@@ -1,0 +1,3 @@
+package jpa;
+class ApplicationTest {
+}
