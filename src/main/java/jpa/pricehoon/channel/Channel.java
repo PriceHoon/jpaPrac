@@ -1,11 +1,15 @@
 package jpa.pricehoon.channel;
 
 import jakarta.persistence.*;
+import jpa.pricehoon.common.TimeStamp;
 import jpa.pricehoon.thread.Thread;
+import jpa.pricehoon.user.User;
+import jpa.pricehoon.userChannel.UserChannel;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -13,10 +17,7 @@ import java.util.Set;
 
 @Entity
 @Getter
-
-public class Channel {
-
-
+public class Channel extends TimeStamp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,6 +38,8 @@ public class Channel {
         PRIVATE
     }
 
+
+
     /**
      * 생성자 - 약속된 형태로만 생성가능하도록 합니다.
      */
@@ -51,8 +54,11 @@ public class Channel {
      * 연관관계 - Foreign Key 값을 따로 컬럼으로 정의하지 않고 연관 관계로 정의합니다.
      */
 
-    @OneToMany(mappedBy = "channel")
+    @OneToMany(mappedBy = "channel",cascade = CascadeType.ALL,orphanRemoval = true )
     private Set<Thread> threads = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "channel" , cascade = CascadeType.ALL)
+    Set<UserChannel> userChannels = new LinkedHashSet<>();
 
     /**
      * 연관관계 편의 메소드 - 반대쪽에는 연관관계 편의 메소드가 없도록 주의합니다.
@@ -61,9 +67,43 @@ public class Channel {
         this.threads.add(thread);
     }
 
+    public UserChannel joinUser(User user){
+        var userChannel = UserChannel.builder().user(user).channel(this).build();
+        this.userChannels.add(userChannel);
+        user.getUserChannels().add(userChannel);
+
+        return userChannel;
+
+    }
+
     /**
      * 서비스 메소드 - 외부에서 엔티티를 수정할 메소드를 정의합니다. (단일 책임을 가지도록 주의합니다.)
      */
+
+    public void updateChannel(Channel channel){
+        this.name = channel.getName();
+    }
+
+    /**
+     * 라이프 사이클 메소드
+     */
+
+
+    @PrePersist
+    public void prePersist(){
+        super.updateCreatedAt();
+        super.updateModifiedAt();
+        super.updateCreatedBy();
+    }
+
+
+    @PreUpdate
+    public void preUpdate(){
+
+        super.updateModifiedAt();
+        super.updateModifiedBy();
+    }
+
 
 
 

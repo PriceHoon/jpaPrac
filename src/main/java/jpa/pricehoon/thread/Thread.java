@@ -1,18 +1,25 @@
 package jpa.pricehoon.thread;
 
 import jakarta.persistence.*;
+import jpa.pricehoon.common.TimeStamp;
+import jpa.pricehoon.mention.Mention;
 import jpa.pricehoon.channel.Channel;
+import jpa.pricehoon.mention.MentionId;
+import jpa.pricehoon.user.User;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 
 @Entity
 
-public class Thread {
+public class Thread  extends TimeStamp {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -47,13 +54,28 @@ public class Thread {
     @JoinColumn(name = "channel_id")
     private Channel channel;
 
+    @OneToMany(mappedBy = "thread",cascade = CascadeType.ALL,orphanRemoval = true)
+    Set<Mention> mentions = new LinkedHashSet<>();
+
+
+
+
+
     /**
      * 연관관계 편의 메소드 - 반대쪽에는 연관관계 편의 메소드가 없도록 주의합니다.
+
      */
 
     public void setChannel(Channel channel){
         this.channel = channel;
         channel.addThread(this);
+    }
+
+    public void addMention(User user){
+        var mention = Mention.builder().user(user).thread(this).build();
+        this.mentions.add(mention);
+        user.getMentions().add(mention);
+
     }
 
     /**
